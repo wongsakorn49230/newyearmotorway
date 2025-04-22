@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>สุ่มรางวัล</title>
+  <style>
+    body {
+      font-family: 'Prompt', sans-serif;
+      text-align: center;
+      background-color: #fafafa;
+      padding: 40px;
+    }
+
+    input {
+      padding: 5px;
+      font-size: 1em;
+      margin: 10px;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 1.1em;
+      border-radius: 8px;
+      border: none;
+      background-color: #28a745;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    .slots-row {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .slot {
+  width: 320px;
+  height: 50px; /* ปรับสูงขึ้น */
+  overflow: hidden;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  background-color: #fdfdfd;
+  box-shadow: 0 0 5px #aaa;
+  position: relative;
+}
+
+
+    .slot-inner {
+  position: relative;
+  transition: transform 2s ease-out;
+}
+    .slot-item {
+      height: 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.5em;
+    }
+
+    @keyframes spinUp {
+      0% { top: 0; }
+      100% { top: -100%; }
+    }
+
+    .removed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    justify-content: center;
+    text-align: left;
+    margin-top: 10px;
+  }
+
+  .removed-col {
+    background: #fff;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 0 3px #ccc;
+  }
+
+  .removed-col p {
+    margin: 0;
+    padding: 2px 0;
+  }
+  </style>
+</head>
+
+<body>
+  <h1>🎰 สุ่มรางวัลจากผู้ร่วมสังสรรค์ ปีใหม่ไทย MOTORWAY 🎰</h1>
+  <label>
+    จำนวนคนที่รับรางวัล :
+    <input type="number" id="countInput" value="1" min="1">
+  </label>
+  <br>
+  <button onclick="spinSlot()">🎲 สุ่มรายชื่อ !</button>
+
+  <div id="slotsContainer" class="slots-row"></div>
+
+  <div class="result" id="winner"></div>
+  <hr style="width: 60%; margin: 30px auto;">
+  <h3>📋 รายชื่อที่ได้รับรางวัล :</h3>
+  <div class="result" id="removedList"></div>
+  <button onclick="resetRemovedNames()">🔄 รีเซ็ตข้อมูล</button>
+
+  <script>
+    // 👉 ใส่ข้อมูลของคุณตรงนี้
+    const apiKey = "AIzaSyAEhTJt5D0RD-K0Hi5o0av9QylRR2VZYiQ";
+    const sheetId = "1WM5YGsFModXF1Sj9ePqvGboNeSW-ywJvAuEMfobR3QU";
+    const sheetName = "Form Responses 1";
+
+    const slotDisplay = document.getElementById("slotsContainer");
+    const winnerDisplay = document.getElementById("winner");
+    const countInput = document.getElementById("countInput");
+    const removedList = document.getElementById("removedList");
+
+    let names = [];
+    let removedNames = [];
+
+    window.onload = () => {
+  const stored = localStorage.getItem("removedNames");
+  if (stored) {
+    removedNames = JSON.parse(stored);
+    renderRemovedList();
+  }
+};
+function resetRemovedNames() {
+  // ลบข้อมูลใน removedNames
+  removedNames = [];
+  
+  // ลบข้อมูลใน localStorage
+  localStorage.removeItem("removedNames");
+
+  // รีเฟรชการแสดงผล
+  renderRemovedList();
+  
+  alert("ข้อมูลถูกรีเซ็ตแล้ว!");
+}
+
+    function renderWinnerList(winners) {
+  const columns = [];
+  for (let i = 0; i < winners.length; i += 10) {
+    const group = winners.slice(i, i + 10);
+    const colHtml = group.map((name, j) => `<p>${i + j + 1}. ${name}</p>`).join("");
+    columns.push(`<div class="removed-col">${colHtml}</div>`);
+  }
+  winnerDisplay.innerHTML = `
+    <h3>🎉 ผู้โชคดี จำนวน ${winners.length} คน :</h3>
+    <div class="removed-grid">${columns.join("")}</div>
+  `;
+}
+
+
+    function renderRemovedList() {
+  const columns = [];
+  for (let i = 0; i < removedNames.length; i += 10) {
+    const group = removedNames.slice(i, i + 10);
+    const colHtml = group.map((name, j) => `<p>${i + j + 1}. ${name}</p>`).join("");
+    columns.push(`<div class="removed-col">${colHtml}</div>`);
+  }
+  removedList.innerHTML = `<div class="removed-grid">${columns.join("")}</div>`;
+}
+
+
+async function fetchNames() {
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!B:B?key=${apiKey}`;
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    // กรองชื่อที่ซ้ำและแปลงเป็น Array
+    names = Array.from(new Set(data.values.flat().slice(1).filter(name => !removedNames.includes(name))));
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    alert("โหลดข้อมูลไม่สำเร็จ กรุณาตรวจสอบ API key และ Sheet ID");
+  }
+}
+
+
+    function getRandomUniqueItems(array, count) {
+      const shuffled = [...array].sort(() => 0.5 - Math.random());
+      return shuffled.slice(0, count);
+    }
+
+    function updateSlotDisplay(count) {
+      slotDisplay.innerHTML = "";
+      for (let i = 0; i < count; i++) {
+        const slot = document.createElement("div");
+        slot.className = "slot";
+        slot.id = `slot${i}`;
+
+        const inner = document.createElement("div");
+        inner.className = "slot-inner";
+        inner.id = `slotInner${i}`;
+        slot.appendChild(inner);
+
+        slotDisplay.appendChild(slot);
+      }
+    }
+
+
+    async function spinSlot() {
+  const count = parseInt(countInput.value) || 1;
+
+  if (names.length === 0) {
+    await fetchNames();
+  }
+
+  names = names.filter(name => !removedNames.includes(name));
+
+  if (count > names.length) {
+    alert("จำนวนมากกว่าจำนวนชื่อที่เหลืออยู่!");
+    return;
+  }
+
+  updateSlotDisplay(count);
+
+  // สุ่มชื่อผู้โชคดีล่วงหน้าโดยไม่ซ้ำ
+  const winners = getRandomUniqueItems(names, count);
+  const allRollingNames = [];
+
+  for (let i = 0; i < count; i++) {
+    const inner = document.getElementById(`slotInner${i}`);
+    inner.innerHTML = "";
+
+    const winner = winners[i];
+    const otherNames = names.filter(n => n !== winner);
+    const randomFakes = getRandomUniqueItems(otherNames, Math.min(19, otherNames.length));
+    const rollingNames = [...randomFakes, winner]; // ชื่อสุดท้ายคือตัวจริง
+
+    allRollingNames.push({ inner, rollingNames });
+
+    for (const name of rollingNames) {
+      const div = document.createElement("div");
+      div.className = "slot-item";
+      div.textContent = name;
+      inner.appendChild(div);
+    }
+  }
+
+  // แสดงชื่อจริงหลังหมุน
+  setTimeout(() => {
+    for (let i = 0; i < count; i++) {
+      const { inner, rollingNames } = allRollingNames[i];
+      const offset = (rollingNames.length - 1) * 50;
+      inner.style.transform = `translateY(-${offset}px)`;
+    }
+
+    removedNames = removedNames.concat(winners);
+    names = names.filter(name => !winners.includes(name));
+    localStorage.setItem("removedNames", JSON.stringify(removedNames));
+
+    setTimeout(() => {
+      renderRemovedList();
+    }, 5000);
+  }, 2500);
+}
+
+  </script>
+</body>
+</html>
