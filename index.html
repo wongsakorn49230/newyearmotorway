@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <link href="https://fonts.googleapis.com/css2?family=Prompt&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
   <meta charset="UTF-8">
   <title>สุ่มรางวัล</title>
   <style>
-    body {
-      font-family: 'Prompt', sans-serif;
-      text-align: center;
-      background-color: #fafafa;
-      padding: 40px;
-    }
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #f4f6f9;
+  text-align: center;
+  padding: 40px;
+  color: #003366; /* กรมท่า */
+}
+
+h1 {
+  color: #005bac;
+  font-weight: 600;
+}
 
     input {
       padding: 5px;
@@ -19,18 +27,19 @@
     }
 
     button {
-      padding: 10px 20px;
-      font-size: 1.1em;
-      border-radius: 8px;
-      border: none;
-      background-color: #28a745;
-      color: white;
-      cursor: pointer;
-    }
+  padding: 10px 20px;
+  font-size: 1.1em;
+  border-radius: 8px;
+  border: none;
+  background-color: #005bac;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
 
-    button:hover {
-      background-color: #218838;
-    }
+  button:hover {
+    background-color: #004a94;
+  }
 
     .slots-row {
       display: flex;
@@ -41,27 +50,27 @@
     }
 
     .slot {
-  width: 320px;
-  height: 50px; /* ปรับสูงขึ้น */
-  overflow: hidden;
-  border: 2px solid #ccc;
-  border-radius: 10px;
-  background-color: #fdfdfd;
-  box-shadow: 0 0 5px #aaa;
-  position: relative;
-}
+    width: 320px;
+    height: 60px; /* เพิ่มความสูงเล็กน้อย */
+    overflow: hidden;
+    border: 2px solid #007bff; /* กรอบสีน้ำเงิน */
+    border-radius: 10px;
+    background-color: #ffffff; /* พื้นหลังขาว */
+    box-shadow: 0 0 8px rgba(0, 91, 172, 0.2);
+    position: relative;
+  }
 
+  .slot-inner {
+    transition: transform 2s cubic-bezier(0.1, 1, 0.68, 1);
+  }
 
-    .slot-inner {
-  position: relative;
-  transition: transform 2s ease-out;
-}
     .slot-item {
       height: 50px;
       display: flex;
       justify-content: center;
       align-items: center;
-      font-size: 1.5em;
+      font-size: 1.3em;
+      color: #004a94;
     }
 
     @keyframes spinUp {
@@ -79,14 +88,15 @@
   }
 
   .removed-col {
-    background: #fff;
+    background: #ffffff;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid #cdd7e0;
     border-radius: 10px;
-    box-shadow: 0 0 3px #ccc;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
   }
 
   .removed-col p {
+    color: #003366;
     margin: 0;
     padding: 2px 0;
   }
@@ -108,13 +118,14 @@
   <hr style="width: 60%; margin: 30px auto;">
   <h3>📋 รายชื่อที่ได้รับรางวัล :</h3>
   <div class="result" id="removedList"></div>
+  <br><br><br>
   <button onclick="resetRemovedNames()">🔄 รีเซ็ตข้อมูล</button>
 
   <script>
     // 👉 ใส่ข้อมูลของคุณตรงนี้
     const apiKey = "AIzaSyAEhTJt5D0RD-K0Hi5o0av9QylRR2VZYiQ";
     const sheetId = "1WM5YGsFModXF1Sj9ePqvGboNeSW-ywJvAuEMfobR3QU";
-    const sheetName = "Form Responses 1";
+    const sheetName = "Sheet4";
 
     const slotDisplay = document.getElementById("slotsContainer");
     const winnerDisplay = document.getElementById("winner");
@@ -131,18 +142,15 @@
     renderRemovedList();
   }
 };
-function resetRemovedNames() {
-  // ลบข้อมูลใน removedNames
-  removedNames = [];
-  
-  // ลบข้อมูลใน localStorage
-  localStorage.removeItem("removedNames");
 
-  // รีเฟรชการแสดงผล
+function resetRemovedNames() {
+  if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด?")) return;
+  removedNames = [];
+  localStorage.removeItem("removedNames");
   renderRemovedList();
-  
   alert("ข้อมูลถูกรีเซ็ตแล้ว!");
 }
+
 
     function renderWinnerList(winners) {
   const columns = [];
@@ -209,7 +217,7 @@ async function fetchNames() {
   const count = parseInt(countInput.value) || 1;
 
   if (names.length === 0) {
-    await fetchNames();
+    await fetchNames(); // โหลดชื่อก่อนสุ่ม
   }
 
   names = names.filter(name => !removedNames.includes(name));
@@ -221,7 +229,6 @@ async function fetchNames() {
 
   updateSlotDisplay(count);
 
-  // สุ่มชื่อผู้โชคดีล่วงหน้าโดยไม่ซ้ำ
   const winners = getRandomUniqueItems(names, count);
   const allRollingNames = [];
 
@@ -232,7 +239,7 @@ async function fetchNames() {
     const winner = winners[i];
     const otherNames = names.filter(n => n !== winner);
     const randomFakes = getRandomUniqueItems(otherNames, Math.min(19, otherNames.length));
-    const rollingNames = [...randomFakes, winner]; // ชื่อสุดท้ายคือตัวจริง
+    const rollingNames = [...randomFakes, winner];
 
     allRollingNames.push({ inner, rollingNames });
 
@@ -244,7 +251,6 @@ async function fetchNames() {
     }
   }
 
-  // แสดงชื่อจริงหลังหมุน
   setTimeout(() => {
     for (let i = 0; i < count; i++) {
       const { inner, rollingNames } = allRollingNames[i];
@@ -258,9 +264,10 @@ async function fetchNames() {
 
     setTimeout(() => {
       renderRemovedList();
-    }, 5000);
+    }, 2500);
   }, 2500);
 }
+
 
   </script>
 </body>
