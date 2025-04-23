@@ -3,6 +3,9 @@
 <head>
   <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
 
+
+
+
   <meta charset="UTF-8">
   <title>สุ่มรางวัล</title>
   <style>
@@ -104,6 +107,7 @@ h1 {
 </head>
 
 <body>
+
   <h1>🎰 สุ่มรางวัลจากผู้ร่วมสังสรรค์ ปีใหม่ไทย MOTORWAY 🎰</h1>
   <label>
     จำนวนคนที่รับรางวัล :
@@ -115,186 +119,146 @@ h1 {
   <br>
   <button onclick="spinSlot()">🎲 สุ่มรายชื่อ !</button>
 
-  <button onclick="window.location.href='history.html'">📜 ดูประวัติการสุ่ม</button>
-
-
   <div id="slotsContainer" class="slots-row"></div>
 
-  <br><br>
+
+  <hr style="width: 60%; margin: 30px auto;">
+  <h3>📋 รายชื่อที่ได้รับรางวัล :</h3>
+  <div id="winnerDisplay"></div>
+  <div class="result" id="removedList"></div>
+
+
+  <br><br><br>
   <button onclick="resetRemovedNames()">🔄 รีเซ็ตข้อมูล</button>
 
   <script>
     // 👉 ใส่ข้อมูลของคุณตรงนี้
     const apiKey = "AIzaSyAEhTJt5D0RD-K0Hi5o0av9QylRR2VZYiQ";
     const sheetId = "1WM5YGsFModXF1Sj9ePqvGboNeSW-ywJvAuEMfobR3QU";
-    const sheetName = "Sheet4";
+    const sheetName = "Form Responses 1";
 
     const slotDisplay = document.getElementById("slotsContainer");
-    const winnerDisplay = document.getElementById("winner");
+    const winnerDisplay = document.getElementById("winnerDisplay");
     const countInput = document.getElementById("countInput");
     const removedList = document.getElementById("removedList");
 
     let names = [];
     let removedNames = [];
-    let drawHistory = [];
-    let isSpinning = false;
+
+
+
+
+
+
+
+
 
 
 
     function updateRemainingCount() {
   const count = names.length;
-  document.getElementById("remainingCount").textContent =
-    `🔢 รายชื่อให้สุ่มอีก ${count} คน`;
+  document.getElementById("remainingCount").textContent = `🔢 รายชื่อให้สุ่มอีก ${count} คน`;
 }
+
+
+
 
 
 async function resetRemovedNames() {
   if (!confirm("คุณแน่ใจหรือไม่ว่าต้องการล้างข้อมูลทั้งหมด?")) return;
 
   removedNames = [];
-  drawHistory = [];
-  names = []; // ✅ เพิ่มบรรทัดนี้เพื่อล้างรายชื่อก่อนโหลดใหม่
-
   localStorage.removeItem("removedNames");
-  localStorage.removeItem("drawHistory");
+  renderRemovedList();
 
-
-  await fetchNames(); // โหลดชื่อใหม่ทั้งหมด
-  updateRemainingCount(); // แสดงจำนวนที่เหลือใหม่
-  slotDisplay.innerHTML = ""
+  await fetchNames();            // 👈 โหลดชื่อใหม่อีกครั้ง
+  updateRemainingCount();        // 👈 อัปเดตจำนวนที่เหลือใหม่
 
   alert("ข้อมูลถูกรีเซ็ตแล้ว!");
 }
 
 
 
+
+
 window.onload = async () => {
-  // โหลดข้อมูลจาก localStorage หากมี
-  const stored = localStorage.getItem("removedNames");
-  if (stored) {
-    removedNames = JSON.parse(stored);
+  // ตรวจสอบว่ามีชื่อที่ถูกลบ (removedNames) ใน localStorage หรือไม่
+  const storedRemovedNames = localStorage.getItem("removedNames");
+  if (storedRemovedNames) {
+    removedNames = JSON.parse(storedRemovedNames);
+    renderRemovedList(); // แสดงรายชื่อที่ถูกสุ่มไปแล้ว
   }
 
-  const historyStored = localStorage.getItem("drawHistory");
-  if (historyStored) {
-    drawHistory = JSON.parse(historyStored);
+  // ตรวจสอบว่ามีชื่อใน pool (names) หรือไม่
+  if (names.length === 0) {
+    await fetchNames(); // ถ้าไม่มีชื่อใน pool ให้โหลดข้อมูลจาก Google Sheets
   }
-
-  await fetchNames();  // โหลดรายชื่อใหม่จาก Google Sheets
-  updateRemainingCount();  // อัพเดตจำนวนคนที่ยังสามารถสุ่มได้
+  updateRemainingCount();        // 👈 อัปเดตจำนวนที่เหลือใหม่
+  
 };
 
 
 
-/*
-  // 👉 ยังไม่ได้ใช้ในโค้ดปัจจุบัน
-  // ใช้สำหรับแสดงรายชื่อที่ได้รางวัลแบบตารางแยก
-  function renderWinnerList(winners) {
-    const columns = [];
-    for (let i = 0; i < winners.length; i += 10) {
-      const group = winners.slice(i, i + 10);
-      const colHtml = group.map((name, j) => `<p>${i + j + 1}. ${name}</p>`).join("");
-      columns.push(`<div class="removed-col">${colHtml}</div>`);
+
+function renderWinnerList(winners) {
+      const columns = [];
+      for (let i = 0; i < winners.length; i += 10) {
+        const group = winners.slice(i, i + 10);
+        const colHtml = group.map((name, j) => `<p>${i + j + 1}. ${name}</p>`).join("");
+        columns.push(`<div class="removed-col">${colHtml}</div>`);
+      }
+      winnerDisplay.innerHTML = `
+        <h3>🎉 ผู้โชคดี จำนวน ${winners.length} คน :</h3>
+        <div class="removed-grid">${columns.join("")}</div>
+      `;
     }
-    winnerDisplay.innerHTML = `
-      <h3>🎉 ผู้โชคดี จำนวน ${winners.length} คน :</h3>
-      <div class="removed-grid">${columns.join("")}</div>
-    `;
-  }
 
-  // 👉 ยังไม่ได้ใช้และ HTML ของ removedList ไม่มีอยู่จริงในหน้า
-  // ถ้าไม่ได้ใช้แสดงรายชื่อที่ถูกลบออก สามารถลบทิ้งได้
-  function renderRemovedList() {
-    const columns = [];
-    for (let i = 0; i < removedNames.length; i += 10) {
-      const group = removedNames.slice(i, i + 10);
-      const colHtml = group.map((name, j) => `<p>${i + j + 1}. ${name}</p>`).join("");
-      columns.push(`<div class="removed-col">${colHtml}</div>`);
+
+    function renderRemovedList() {
+      const allNames = removedNames.map(([_, name]) => name);
+      const columns = [];
+      for (let i = 0; i < allNames.length; i += 10) {
+        const group = allNames.slice(i, i + 10);
+        const colHtml = group.map((name, j) => `<p>${i + j + 1}. ${name}</p>`).join("");
+        columns.push(`<div class="removed-col">${colHtml}</div>`);
+      }
+      removedList.innerHTML = `<div class="removed-grid">${columns.join("")}</div>`;
     }
-    removedList.innerHTML = `<div class="removed-grid">${columns.join("")}</div>`;
-  }
-
-  // 👉 ยังไม่ได้ใช้งาน element นี้
-  const removedList = document.getElementById("removedList");
-*/
 
 
 
-// ฟังก์ชันในการบันทึกประวัติการสุ่มลงใน Google Sheets (แผ่นงานชื่อว่า "history")
+    async function fetchNames() {
+  if (names.length > 0) return;  // ถ้ามีรายชื่อใน names แล้ว ไม่ต้องโหลดใหม่
 
-const sheetIdhistory = "1eXwZ2B3x2Wj7drdtAFCxFOZVTmihy18MkGNk61opqcM";
-const sheetNamehistory = "Sheet1";
-
-function saveDrawHistoryToSheet(draw) {
-  const winners = draw[0].winners.join(", ");
-  fetch("https://script.google.com/macros/s/AKfycbwPCg_8RAktQvrmTtWSHq2bWluPE7xRl7Uls678XPFvd5tEKliHh7em9LszrYAU2wFDgQ/exec", {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      timestamp: draw[0].timestamp,
-      winners: winners
-    })
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log('Success:', data);
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });
-}
-
-
-
-// ฟังก์ชันที่เรียกใช้หลังจากการสุ่มเสร็จ
-function onDrawComplete(winners) {
-  const draw = {
-    timestamp: new Date().toLocaleString("th-TH"), // เวลาปัจจุบันในรูปแบบไทย
-    winners: winners // รายชื่อผู้ชนะ
-  };
-
-  // บันทึกประวัติลงใน Google Sheets
-  saveDrawHistoryToSheet([draw]);
-}
-
-// ตัวอย่างการเรียกใช้งานหลังจากสุ่มเสร็จ
-onDrawComplete(["ชื่อนาย A", "ชื่อนาย B", "ชื่อนาย C"]); // ตัวอย่างผู้ชนะ 3 คน
-
-
-
-
-
-async function fetchNames() {
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!B:B?key=${apiKey}`;
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A:D?key=${apiKey}`;
   try {
     const response = await fetch(url);
     const data = await response.json();
-    // กรองชื่อที่ซ้ำและแปลงเป็น Array
-    names = Array.from(new Set(data.values.flat().slice(1).filter(name => !removedNames.includes(name))));
+
+    const rows = data.values.slice(1); // ข้ามหัวตาราง
+
+    const uniqueMap = new Map();
+
+    for (const row of rows) {
+      const name = row[0]?.trim(); // คอลัมน์ A: ชื่อ
+      const key = row[3]?.trim();  // คอลัมน์ D: รหัส Primary Key
+
+      if (key && name && !removedNames.includes(key)) {
+        uniqueMap.set(key, name); // เก็บเป็น Map <key, name>
+      }
+    }
+
+    names = Array.from(uniqueMap.entries()); // [ [key, name], ... ]
   } catch (error) {
     console.error("Error fetching data:", error);
     alert("โหลดข้อมูลไม่สำเร็จ กรุณาตรวจสอบ API key และ Sheet ID");
   }
 }
 
-
-    function getRandomUniqueItems(array, count) {
-      const shuffled = [...array].sort(() => 0.5 - Math.random());
-      return shuffled.slice(0, count);
-    }
-
-
-
-
-
-
-
-
-
-
-
+function getRandomUniqueItems(array, count) {
+  const shuffled = [...array].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+}
 
 
     function updateSlotDisplay(count) {
@@ -318,20 +282,14 @@ async function fetchNames() {
 
 
 
-
     async function spinSlot() {
-
-      if (isSpinning) return;
-      isSpinning = true;
-
   const count = parseInt(countInput.value) || 1;
-
+  // ตรวจสอบว่า pool ของชื่อหมดแล้วหรือยัง
   if (names.length === 0) {
-    await fetchNames(); // โหลดชื่อก่อนสุ่ม
-    updateRemainingCount();
+    alert("ไม่มีชื่อให้สุ่มแล้ว!");
+    return; // หยุดการทำงานหากไม่มีชื่อ
   }
 
-  names = names.filter(name => !removedNames.includes(name));
 
   if (count > names.length) {
     alert("จำนวนมากกว่าจำนวนชื่อที่เหลืออยู่!");
@@ -347,10 +305,10 @@ async function fetchNames() {
     const inner = document.getElementById(`slotInner${i}`);
     inner.innerHTML = "";
 
-    const winner = winners[i];
-    const otherNames = names.filter(n => n !== winner);
+    const [winnerKey, winnerName] = winners[i];
+    const otherNames = names.filter(([k]) => k !== winnerKey).map(([_, n]) => n);
     const randomFakes = getRandomUniqueItems(otherNames, Math.min(19, otherNames.length));
-    const rollingNames = [...randomFakes, winner];
+    const rollingNames = [...randomFakes, winnerName];
 
     allRollingNames.push({ inner, rollingNames });
 
@@ -369,25 +327,14 @@ async function fetchNames() {
       inner.style.transform = `translateY(-${offset}px)`;
     }
 
-    removedNames = removedNames.concat(winners);
-    names = names.filter(name => !winners.includes(name));
-    localStorage.setItem("removedNames", JSON.stringify(removedNames));
-
-
-const latestDraw = {
-  timestamp: new Date().toLocaleString("th-TH"),
-  winners
-};
-drawHistory.push(latestDraw);
-localStorage.setItem("drawHistory", JSON.stringify(drawHistory));
-
-saveDrawHistoryToSheet([latestDraw]);
+    removedNames = removedNames.concat(winners); // เพิ่มผู้โชคดีไปยัง removedNames
+    names = names.filter(name => !winners.includes(name)); // ลบผู้โชคดีออกจาก names
+    localStorage.setItem("removedNames", JSON.stringify(removedNames)); // บันทึกลงใน localStorage
 
     setTimeout(() => {
+      renderRemovedList();
       updateRemainingCount();
-
-      isSpinning = false;
-
+      saveWinnersToSheet(winners); // บันทึกผู้โชคดีลงใน Sheet ใหม่
     }, 2500);
   }, 2500);
 }
