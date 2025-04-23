@@ -127,6 +127,9 @@ h1 {
   <div id="winnerDisplay"></div>
   <div class="result" id="removedList"></div>
 
+  <br><br>
+<button onclick="downloadWinners()">📥 ดาวน์โหลดรายชื่อผู้โชคดี</button>
+
 
   <br><br><br>
   <button onclick="resetRemovedNames()">🔄 รีเซ็ตข้อมูล</button>
@@ -197,6 +200,27 @@ window.onload = async () => {
   
 };
 
+
+function downloadWinners() {
+  if (removedNames.length === 0) {
+    alert("ยังไม่มีรายชื่อผู้โชคดีให้ดาวน์โหลด!");
+    return;
+  }
+
+  const lines = removedNames.map(([_, name], index) => `${index + 1}. ${name}`);
+  const content = "รายชื่อผู้โชคดี:\n\n" + lines.join("\n");
+
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "ผู้โชคดี.txt";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 
 
@@ -334,7 +358,6 @@ function getRandomUniqueItems(array, count) {
     setTimeout(() => {
       renderRemovedList();
       updateRemainingCount();
-      saveWinnersToSheet(winners); // บันทึกผู้โชคดีลงใน Sheet ใหม่
     }, 2500);
   }, 2500);
 }
