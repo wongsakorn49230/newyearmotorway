@@ -147,6 +147,7 @@ h1 {
 
     let names = [];
     let removedNames = [];
+    let isSpinning = false;
 
 
 
@@ -201,6 +202,8 @@ window.onload = async () => {
 };
 
 
+
+
 function downloadWinners() {
   if (removedNames.length === 0) {
     alert("ยังไม่มีรายชื่อผู้โชคดีให้ดาวน์โหลด!");
@@ -224,6 +227,9 @@ function downloadWinners() {
 
 
 
+
+
+
 function renderWinnerList(winners) {
       const columns = [];
       for (let i = 0; i < winners.length; i += 10) {
@@ -236,6 +242,10 @@ function renderWinnerList(winners) {
         <div class="removed-grid">${columns.join("")}</div>
       `;
     }
+
+
+
+
 
 
     function renderRemovedList() {
@@ -251,6 +261,9 @@ function renderWinnerList(winners) {
 
 
 
+
+
+
     async function fetchNames() {
   if (names.length > 0) return;  // ถ้ามีรายชื่อใน names แล้ว ไม่ต้องโหลดใหม่
 
@@ -261,14 +274,16 @@ function renderWinnerList(winners) {
 
     const rows = data.values.slice(1); // ข้ามหัวตาราง
 
+    const removedKeys = new Set(removedNames.map(([key]) => key)); // ✅
+
     const uniqueMap = new Map();
 
     for (const row of rows) {
       const name = row[0]?.trim(); // คอลัมน์ A: ชื่อ
       const key = row[3]?.trim();  // คอลัมน์ D: รหัส Primary Key
 
-      if (key && name && !removedNames.includes(key)) {
-        uniqueMap.set(key, name); // เก็บเป็น Map <key, name>
+      if (key && name && !removedKeys.has(key)) {
+        uniqueMap.set(key, name);
       }
     }
 
@@ -307,6 +322,11 @@ function getRandomUniqueItems(array, count) {
 
 
     async function spinSlot() {
+
+      if (isSpinning) return; // ป้องกันการคลิกซ้ำ
+  isSpinning = true;
+
+
   const count = parseInt(countInput.value) || 1;
   // ตรวจสอบว่า pool ของชื่อหมดแล้วหรือยัง
   if (names.length === 0) {
@@ -358,6 +378,10 @@ function getRandomUniqueItems(array, count) {
     setTimeout(() => {
       renderRemovedList();
       updateRemainingCount();
+
+      isSpinning = false; // ปลดล็อคหลังจบ
+
+
     }, 2500);
   }, 2500);
 }
