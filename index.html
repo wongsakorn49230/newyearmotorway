@@ -179,6 +179,7 @@ async function resetRemovedNames() {
   updateRemainingCount();        // 👈 อัปเดตจำนวนที่เหลือใหม่
 
   alert("ข้อมูลถูกรีเซ็ตแล้ว!");
+  location.reload();             // ✅ รีเฟรชหน้าเว็บ
 }
 
 
@@ -327,6 +328,8 @@ function getRandomUniqueItems(array, count) {
   isSpinning = true;
 
 
+  try {
+
   const count = parseInt(countInput.value) || 1;
   // ตรวจสอบว่า pool ของชื่อหมดแล้วหรือยัง
   if (names.length === 0) {
@@ -337,6 +340,7 @@ function getRandomUniqueItems(array, count) {
 
   if (count > names.length) {
     alert("จำนวนมากกว่าจำนวนชื่อที่เหลืออยู่!");
+    isSpinning = false;
     return;
   }
 
@@ -384,7 +388,15 @@ function getRandomUniqueItems(array, count) {
 
     }, 2500);
   }, 2500);
+
+} catch (e) {
+    alert("เกิดข้อผิดพลาดระหว่างสุ่ม: " + e.message);
+  } finally {
+    isSpinning = false; // ✅ ให้แน่ใจว่าปลดล็อค
+  }
 }
+
+
 
 
   </script>
