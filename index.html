@@ -318,6 +318,22 @@ function getRandomUniqueItems(array, count) {
     }
 
 
+    function animateSlot(inner, names, duration = 2000, interval = 100) {
+  return new Promise((resolve) => {
+    let index = 0;
+    const loop = setInterval(() => {
+      inner.innerHTML = `
+        <div class="slot-item">${names[index % names.length]}</div>
+      `;
+      index++;
+    }, interval);
+
+    setTimeout(() => {
+      clearInterval(loop);
+      resolve(); // บอกว่าหมุนเสร็จแล้ว
+    }, duration);
+  });
+}
 
 
 
@@ -360,34 +376,28 @@ function getRandomUniqueItems(array, count) {
 
     allRollingNames.push({ inner, rollingNames });
 
-    for (const name of rollingNames) {
-      const div = document.createElement("div");
-      div.className = "slot-item";
-      div.textContent = name;
-      inner.appendChild(div);
-    }
+// แสดงชื่อเปล่าเริ่มต้นไว้ก่อน
+inner.innerHTML = `<div class="slot-item">...</div>`;
+
+// เก็บ rollingNames ไว้ให้ใช้ใน animateSlot
+allRollingNames.push({ inner, rollingNames });
+
   }
 
-  setTimeout(() => {
-    for (let i = 0; i < count; i++) {
-      const { inner, rollingNames } = allRollingNames[i];
-      const offset = (rollingNames.length - 1) * 50;
-      inner.style.transform = `translateY(-${offset}px)`;
-    }
+  await Promise.all(
+  allRollingNames.map(({ inner, rollingNames }, i) =>
+    animateSlot(inner, rollingNames)
+  )
+);
 
-    removedNames = removedNames.concat(winners); // เพิ่มผู้โชคดีไปยัง removedNames
-    names = names.filter(name => !winners.includes(name)); // ลบผู้โชคดีออกจาก names
-    localStorage.setItem("removedNames", JSON.stringify(removedNames)); // บันทึกลงใน localStorage
+removedNames = removedNames.concat(winners);
+names = names.filter(name => !winners.includes(name));
+localStorage.setItem("removedNames", JSON.stringify(removedNames));
 
-    setTimeout(() => {
-      renderRemovedList();
-      updateRemainingCount();
+renderRemovedList();
+updateRemainingCount();
+isSpinning = false;
 
-      isSpinning = false; // ปลดล็อคหลังจบ
-
-
-    }, 2500);
-  }, 2500);
 
 } catch (e) {
     alert("เกิดข้อผิดพลาดระหว่างสุ่ม: " + e.message);
