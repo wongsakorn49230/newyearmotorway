@@ -159,6 +159,7 @@ h1 {
     let isSpinning = false;
     let currentRound = 1;
     let drawHistoryByRound = {}; // {1: [...], 2: [...]}
+    let uniqueMap = new Map();
 
 
 
@@ -284,18 +285,18 @@ function downloadWinners() {
 
 
 function renderWinnerList(winners) {
-      const columns = [];
-      for (let i = 0; i < winners.length; i += 10) {
-        const group = winners.slice(i, i + 10);
-        const colHtml = group.map((name, j) => `<p>${i + j + 1}. ${name}</p>`).join("");
-        columns.push(`<div class="removed-col">${colHtml}</div>`);
-      }
-      winnerDisplay.innerHTML = `
-        <h3>🎉 ผู้โชคดี จำนวน ${winners.length} คน :</h3>
-        <div class="removed-grid">${columns.join("")}</div>
-      `;
-    }
-
+  const columns = [];
+  for (let i = 0; i < winners.length; i += 10) {
+    const group = winners.slice(i, i + 10);
+    const colHtml = group.map(([_, name, member], j) =>
+      `<p>${i + j + 1}. ${name} (${member})</p>`).join("");
+    columns.push(`<div class="removed-col">${colHtml}</div>`);
+  }
+  winnerDisplay.innerHTML = `
+    <h3>🎉 ผู้โชคดี จำนวน ${winners.length} คน :</h3>
+    <div class="removed-grid">${columns.join("")}</div>
+  `;
+}
 
 
 
@@ -318,30 +319,28 @@ function renderWinnerList(winners) {
 
 
     async function fetchNames() {
-  if (names.length > 0) return;  // ถ้ามีรายชื่อใน names แล้ว ไม่ต้องโหลดใหม่
+  if (names.length > 0) return;
 
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}!A:D?key=${apiKey}`;
   try {
     const response = await fetch(url);
     const data = await response.json();
 
-
     const rows = data.values.slice(1); // ข้ามหัวตาราง
+    const removedKeys = new Set(removedNames.map(([key]) => key));
 
-    const removedKeys = new Set(removedNames.map(([key]) => key)); // ✅
-
-    const uniqueMap = new Map();
-
+    uniqueMap.clear(); // ✅ ใช้ตัวแปร global
     for (const row of rows) {
       const name = (row[0] || "").trim();
+      const member = (row[1] || "").trim();
       const key = (row[3] || "").trim();
 
-      if (key && name && !removedKeys.has(key)) {
-        uniqueMap.set(key, name);
+      if (key && name && member && !removedKeys.has(key)) {
+        uniqueMap.set(key, [name, member]);
       }
     }
 
-    names = Array.from(uniqueMap.entries()); // [ [key, name], ... ]
+    names = Array.from(uniqueMap.entries()); // ✅ เก็บใน names
   } catch (error) {
     console.error("Error fetching data:", error);
     alert("โหลดข้อมูลไม่สำเร็จ กรุณาตรวจสอบ API key และ Sheet ID");
@@ -438,9 +437,9 @@ function getRandomUniqueItems(array, count) {
     inner.innerHTML = "";
 
     const [winnerKey, winnerName] = winners[i];
-    const otherNames = names.filter(([k]) => k !== winnerKey).map(([_, n]) => n);
+    const otherNames = names.filter(([k]) => k !== winnerKey).map(([k]) => uniqueMap.get(k)?.[0]);
     const randomFakes = getRandomUniqueItems(otherNames, Math.min(19, otherNames.length));
-    const rollingNames = [...randomFakes, winnerName];
+    const rollingNames = [...randomFakes, uniqueMap.get(winnerKey)?.[0]];
 
     allRollingNames.push({ inner, rollingNames });
 
@@ -456,7 +455,15 @@ inner.innerHTML = `<div class="slot-item">...</div>`;
   )
 );
 
-removedNames = removedNames.concat(winners);
+const winnersWithMember = winners.map(([key]) => {
+  const [name, member] = uniqueMap.get(key);
+  return [key, [name, member]];
+});
+removedNames = removedNames.concat(winnersWithMember);
+displayDrawHistory();
+currentRound++;
+
+
 names = names.filter(name => !winners.includes(name));
 localStorage.setItem("removedNames", JSON.stringify(removedNames));
 
